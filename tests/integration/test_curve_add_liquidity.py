@@ -1,5 +1,4 @@
 import pytest
-from web3 import Web3
 from weiroll.client import WeirollContract, WeirollPlanner
 from tests.integration.conftest import (
     convert_to_wei,
@@ -157,7 +156,4 @@ def test_curve_add_liquidity_with_call(
         stop_impersonating(mainnet_fork_web3, whale)
 
 
-# Utility function to convert ether to wei (duplicated for backward compatibility)
-def convert_to_wei(amount_in_ether):
-    """Convert ether to wei"""
-    return Web3.to_wei(amount_in_ether, "ether")
+# Function now imported from conftest

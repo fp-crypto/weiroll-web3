@@ -126,15 +126,15 @@ def test_one_inch(mainnet_fork_web3, weiroll_vm):
 
         # Create WeirollContract instances
         w_weth = WeirollContract.createContract(weth)
-        w_one_inch = WeirollContract.createContract(one_inch)
+        WeirollContract.createContract(one_inch)
 
         # Approve 1inch router to spend WETH
         planner.add(w_weth.approve(one_inch_address, 2**256 - 1))
 
         # Since we're executing an arbitrary transaction, use the low-level call functionality
         # Extract the function signature and parameters
-        function_signature = tx_data_bytes[:4]
-        parameters = tx_data_bytes[4:]
+        tx_data_bytes[:4]
+        tx_data_bytes[4:]
 
         # Add the call to the planner
         # This uses the raw calldata from the 1inch API
@@ -143,7 +143,7 @@ def test_one_inch(mainnet_fork_web3, weiroll_vm):
         # Execute the plan
         cmds, state = planner.plan()
         tx_hash = weiroll_vm.execute(cmds, state, {"from": whale})
-        receipt = mainnet_fork_web3.eth.wait_for_transaction_receipt(tx_hash)
+        mainnet_fork_web3.eth.wait_for_transaction_receipt(tx_hash)
 
         # Verify that we received CRV tokens
         crv_balance = crv.functions.balanceOf(weiroll_vm.address).call()

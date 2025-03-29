@@ -118,7 +118,7 @@ def test_swaps(weiroll_vm, mainnet_fork_web3, setup_accounts, whale_account):
         planner = WeirollPlanner(weiroll_vm)
 
         # Wrap contracts for weiroll
-        w_yvweth = WeirollContract.createContract(yvweth_contract)
+        WeirollContract.createContract(yvweth_contract)
         w_weth = WeirollContract.createContract(weth_contract)
         w_susd = WeirollContract.createContract(susd_contract)
         w_seth = WeirollContract.createContract(seth_contract)

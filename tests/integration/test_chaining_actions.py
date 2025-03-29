@@ -169,11 +169,10 @@ def test_chaining_action(mainnet_fork_web3, weiroll_vm, tuple_helper):
         one_inch = mainnet_fork_web3.eth.contract(
             address=one_inch_address, abi=one_inch_abi
         )
-        w_one_inch = WeirollContract.createContract(one_inch)
+        WeirollContract.createContract(one_inch)
 
         # Get transaction data and parameters from 1inch
         tx_data_bytes = Web3.to_bytes(hexstr=tx_data["data"])
-        function_signature = tx_data_bytes[:4].hex()
 
         # Add WETH approval for 1inch router
         planner.add(w_weth.approve(one_inch_address, 2**256 - 1))
@@ -202,7 +201,7 @@ def test_chaining_action(mainnet_fork_web3, weiroll_vm, tuple_helper):
         # Execute the plan
         cmds, state = planner.plan()
         tx_hash = weiroll_vm.execute(cmds, state, {"from": whale})
-        receipt = mainnet_fork_web3.eth.wait_for_transaction_receipt(tx_hash)
+        mainnet_fork_web3.eth.wait_for_transaction_receipt(tx_hash)
 
         # Verify that tuple_helper received the Curve LP tokens
         lp_balance = crv_yfi_weth.functions.balanceOf(tuple_helper.address).call()
