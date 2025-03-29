@@ -2,7 +2,6 @@ import os
 import pytest
 import requests
 from web3 import Web3
-from typing import Dict, Any
 
 from weiroll.client import WeirollPlanner, WeirollContract, ReturnValue
 from tests.integration.conftest import (
@@ -119,7 +118,7 @@ def test_chaining_action(mainnet_fork_web3, weiroll_vm, tuple_helper):
         w_crv_yfi_weth = WeirollContract.createContract(crv_yfi_weth)
 
         # Get 1inch swap data for WETH -> YFI
-        swap_url = f"https://api.1inch.dev/swap/v5.2/1/swap"
+        swap_url = "https://api.1inch.dev/swap/v5.2/1/swap"
         headers = {"Authorization": f"Bearer {ONE_INCH_API_KEY}"}
         response = requests.get(
             swap_url,

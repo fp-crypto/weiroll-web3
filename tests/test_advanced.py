@@ -1,9 +1,7 @@
 import eth_abi
 import pytest
-from hexbytes import HexBytes
 
 import weiroll.client as weiroll
-from weiroll.utils import eth_abi_encode_single
 
 
 def test_weiroll_func_takes_and_replaces_current_state(alice, testContract):

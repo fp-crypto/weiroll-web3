@@ -1,7 +1,6 @@
 import re
 from collections import defaultdict, namedtuple
 from enum import IntEnum, IntFlag
-from functools import cache
 from typing import Optional
 
 import eth_abi
@@ -10,7 +9,6 @@ import eth_abi.grammar
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.contract.base_contract import BaseContract, BaseContractFunction
-from web3.utils.abi import get_abi_element_info
 
 from .utils import eth_abi_encode_single
 
@@ -639,7 +637,7 @@ class WeirollPlanner:
 
             for arg in inargs:
                 if isinstance(arg, ReturnValue):
-                    if not arg.command in seen:
+                    if arg.command not in seen:
                         raise ValueError(
                             f"Return value from '{arg.command.call.fragment.name}' is not visible here"
                         )
@@ -817,7 +815,7 @@ def _get_type_strings(abi_types: list[eth_abi.grammar.ABIType]) -> list[str]:
     type_strings: list = []
 
     for abi_type in abi_types:
-        if abi_type.components != None:
+        if abi_type.components is not None:
             sub_type_strings = _get_type_strings(abi_type.components)
             type_strings.append("(" + ",".join(sub_type_strings) + ")")
         else:

@@ -2,7 +2,6 @@ import os
 import pytest
 import requests
 from web3 import Web3
-from typing import Dict, Any
 
 from weiroll.client import WeirollPlanner, WeirollContract
 from tests.integration.conftest import (
@@ -81,7 +80,7 @@ def test_one_inch(mainnet_fork_web3, weiroll_vm):
         )
 
         # Get 1inch swap data
-        swap_url = f"https://api.1inch.dev/swap/v5.2/1/swap"
+        swap_url = "https://api.1inch.dev/swap/v5.2/1/swap"
         headers = {"Authorization": f"Bearer {ONE_INCH_API_KEY}"}
         response = requests.get(
             swap_url,

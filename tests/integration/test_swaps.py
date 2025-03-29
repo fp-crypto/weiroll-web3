@@ -1,7 +1,7 @@
 import pytest
 from web3 import Web3
 import json
-from weiroll.client import WeirollContract, WeirollPlanner, ReturnValue
+from weiroll.client import WeirollContract, WeirollPlanner
 from tests.integration.conftest import (
     convert_to_wei,
     impersonate_account,

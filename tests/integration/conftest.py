@@ -2,21 +2,10 @@ import os
 import pytest
 import json
 import functools
-from pathlib import Path
 from web3 import Web3
-from typing import Callable, Any, Dict, Optional, Union
+from typing import Optional
 
 # Import common test fixtures but not the weiroll_vm which depends on TestableVM
-from tests.conftest import (
-    get_web3,
-    load_contract_data,
-    alice,
-    deploy_contract,
-    math_contract,
-    math,
-    strings_contract,
-    strings,
-)
 
 
 @pytest.fixture(scope="session")

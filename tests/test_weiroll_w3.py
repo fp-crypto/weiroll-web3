@@ -1,7 +1,6 @@
 import eth_abi
 import pytest
 from hexbytes import HexBytes
-from web3 import Web3
 
 import weiroll.client as weiroll
 from weiroll.utils import eth_abi_encode_single
