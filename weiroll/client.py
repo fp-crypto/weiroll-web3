@@ -291,7 +291,9 @@ class WeirollContract:
         function_names = [fn.name for fn in self.contract.all_functions()]
 
         for function_name in function_names:
-            method: BaseContractFunction = self.contract.get_function_by_name(function_name)
+            method: BaseContractFunction = self.contract.get_function_by_name(
+                function_name
+            )
             selector = _signature_to_selector(method.signature).to_0x_hex()
 
             # Create function fragment

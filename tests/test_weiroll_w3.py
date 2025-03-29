@@ -17,7 +17,7 @@ def test_weiroll_contract(math):
     assert result.fragment.inputs == ["uint256", "uint256"]
     assert result.fragment.name == "add"
     assert result.fragment.outputs == ["uint256"]
-    # Selector may be different due to different ABI encoding 
+    # Selector may be different due to different ABI encoding
     # so we check it exists but don't compare exact value
     assert result.fragment.signature.startswith("0x")
     assert result.callvalue is None
@@ -53,7 +53,9 @@ def test_weiroll_planner_simple_program(alice, math):
     # Instead we check it has the right structure
     assert len(commands[0]) > 20  # Should be long enough to contain address and data
     # Address might be formatted without 0x prefix in the command
-    assert math.address.lower().replace('0x', '') in commands[0].hex().lower()  # Should contain contract address
+    assert (
+        math.address.lower().replace("0x", "") in commands[0].hex().lower()
+    )  # Should contain contract address
 
     assert len(state) == 2
     assert state[0] == eth_abi.encode(["uint256"], [1])
@@ -185,12 +187,12 @@ def test_weiroll_with_value(alice, math_contract):
     """Test calls with value (ETH)."""
     # Create a contract wrapper with CALL flag instead of DELEGATECALL
     math = weiroll.WeirollContract.createContract(math_contract)
-    
+
     planner = weiroll.WeirollPlanner(alice)
     planner.add(math.add(3, 4).withValue(1))
-    
+
     commands, state = planner.plan()
-    
+
     assert len(commands) == 1
     assert len(state) == 3
     assert state[0] == eth_abi_encode_single("uint", 1)
@@ -202,10 +204,10 @@ def test_weiroll_call_with_static(alice, math):
     """Test static calls."""
     # Convert library to contract first (as libraries use DELEGATECALL)
     math_contract = weiroll.WeirollContract.createContract(math.contract)
-    
+
     planner = weiroll.WeirollPlanner(alice)
     planner.add(math_contract.add(1, 2).staticcall())
-    
+
     commands, state = planner.plan()
     assert len(commands) == 1
     # Check state has the args
@@ -218,7 +220,7 @@ def test_weiroll_call_with_raw_value(alice, math):
     """Test calls with raw return value."""
     planner = weiroll.WeirollPlanner(alice)
     planner.add(math.add(1, 2).rawValue())
-    
+
     commands, state = planner.plan()
     assert len(commands) == 1
     # Check state has the args
@@ -230,11 +232,11 @@ def test_weiroll_call_with_raw_value(alice, math):
 def test_weiroll_withvalue_and_staticcall_incompatible(alice, math_contract):
     """Test that withValue and staticcall can't be combined."""
     math = weiroll.WeirollContract.createContract(math_contract)
-    
+
     # Try to use both withValue and staticcall
     with pytest.raises(ValueError, match="Only CALL operations can be made static"):
         math.add(1, 2).withValue(1).staticcall()
-        
+
 
 def test_delegatecall_cant_use_withvalue(alice, math):
     """Test that DELEGATECALL can't use withValue."""
