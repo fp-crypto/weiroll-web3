@@ -15,6 +15,7 @@ pip install weiroll-web3
 ## Usage
 
 ### Wrapping contracts
+
 Weiroll programs consist of a sequence of calls to functions in external contracts. These calls can be delegate calls to dedicated library contracts, or standard/static calls to external contracts. Before you can start creating a weiroll program, you must create interfaces for at least one contract you intend to use.
 
 The easiest way to do this is by wrapping web3.py contract instances:
@@ -90,6 +91,7 @@ commands, state = planner.plan()
 ```
 
 ### Subplans
+
 In some cases, it may be useful to instantiate nested instances of the weiroll VM - for example, when using flash loans, or other systems that function by making a callback to your code. The weiroll planner supports this via 'subplans'.
 
 To make a subplan, construct the operations that should take place inside the nested instance usually, then pass the planner object to a contract function that executes the subplan, and pass that to the outer planner's `.addSubplan()` function instead of `.add()`.
@@ -116,17 +118,20 @@ If a subplan returns an updated state, return values created in a subplanner, su
 ### Build and Test
 
 First, make sure you have Anvil running for tests:
+
 ```
 yarn anvil:local
 ```
 
 Then to build and run tests:
+
 ```
 yarn compile  # Compile Solidity contracts
 yarn test     # Run all tests
 ```
 
 Or you can run individual test files:
+
 ```
 yarn test:basic  # Run basic functionality tests
 ```
@@ -141,11 +146,13 @@ yarn anvil
 ```
 
 Run all integration tests:
+
 ```
 yarn test:integration
 ```
 
 Or run specific integration tests:
+
 ```
 yarn test:integration:curve   # Test Curve pool liquidity add
 yarn test:integration:swaps   # Test multi-protocol swaps
@@ -154,11 +161,11 @@ yarn test:integration:1inch   # Test 1inch swaps (needs API key)
 ```
 
 For tests that require API keys (like 1inch tests), set the environment variable:
+
 ```
 export ONE_INCH_API_KEY=your-api-key
 ```
 
 ## Credits
 
-- [@WyseNynja](https://github.com/WyseNynja) for the original weiroll implementation in Python
-- [@fp-crypto](https://github.com/fp-crypto) for the ape integration (ape-roll)
+- [@BlinkyStitt](https://github.com/BlinkyStitt) for the original weiroll implementation in Python
