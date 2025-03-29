@@ -1,9 +1,9 @@
 {
-  "name": "ape-roll",
+  "name": "weiroll-web3",
   "devDependencies": {
     "@commitlint/cli": "^17.0.0",
     "@commitlint/config-conventional": "^17.0.0",
-    "@openzeppelin/contracts": "^4.8.2",
+    "@openzeppelin/contracts": "^4.1.0",
     "hardhat": "^2.12.2",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
@@ -15,6 +15,23 @@
   "scripts": {
     "format": "prettier --write '**/*.sol' '**/*.json'",
     "format:check": "prettier --check '**/*.sol' ''**/*.json''",
-    "lint": "solhint 'contracts/**/*.sol'"
+    "lint": "solhint 'contracts/**/*.sol'",
+    "clean": "rm -rf build",
+    "make-dirs": "mkdir -p build/contracts/Libraries build/contracts/Helpers build/contracts/test",
+    "compile:libs": "solc --optimize --optimize-runs=200 --combined-json=abi,bin --base-path=. --include-path=node_modules/ --allow-paths=contracts,node_modules/@openzeppelin --overwrite contracts/Libraries/*.sol -o build/contracts/Libraries",
+    "compile:helpers": "solc --optimize --optimize-runs=200 --combined-json=abi,bin --base-path=. --include-path=node_modules/ --allow-paths=contracts,node_modules/@openzeppelin --overwrite contracts/Helpers/*.sol -o build/contracts/Helpers",
+    "compile:tests": "solc --optimize --optimize-runs=200 --combined-json=abi,bin --base-path=. --include-path=node_modules/ --allow-paths=contracts,node_modules/@openzeppelin --overwrite contracts/test/*.sol -o build/contracts/test",
+    "compile:main": "solc --optimize --optimize-runs=200 --combined-json=abi,bin --base-path=. --include-path=node_modules/ --allow-paths=contracts,node_modules/@openzeppelin --overwrite contracts/*.sol -o build/contracts",
+    "compile": "yarn clean && yarn make-dirs && yarn compile:libs && yarn compile:helpers && yarn compile:tests && yarn compile:main",
+    "anvil": "anvil --fork-url $ETH_RPC_URL",
+    "anvil:local": "anvil",
+    "test": "yarn compile && uv run pytest tests",
+    "test:basic": "yarn compile && uv run pytest tests/test_basic.py -v",
+    "test:integration": "yarn compile && uv run pytest tests/integration -v",
+    "test:integration:curve": "yarn compile && uv run pytest tests/integration/test_curve_add_liquidity.py -v",
+    "test:integration:swaps": "yarn compile && uv run pytest tests/integration/test_swaps.py -v",
+    "test:integration:1inch": "yarn compile && uv run pytest tests/integration/test_one_inch.py -v",
+    "test:integration:chain": "yarn compile && uv run pytest tests/integration/test_chaining_actions.py -v",
+    "build": "yarn compile && python -m build"
   }
 }

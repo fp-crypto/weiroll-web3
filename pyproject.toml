@@ -1,41 +1,23 @@
-[tool.poetry]
-name = "ape-roll"
-version = "0.0.3"
-description = "Build weiroll transactions with ape"
-authors = ["FP <fp@noemail.com>"]
-license = "MIT"
-packages = [
-    { include = "ape_roll" },
-]
+[project]
+name = "weiroll-web3"
+version = "0.1.0"
+description = "Web3.py integration for weiroll"
 readme = "README.md"
-homepage = "https://github.com/fp-crypto/ape-roll"
-repository = "https://github.com/fp-crypto/ape-roll"
+requires-python = ">=3.13"
+dependencies = ["web3>=7.10.0,<8", "eth-abi", "hexbytes"]
 
-[tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-eth-ape = "^0.6.18"
-
-[tool.poetry.dev-dependencies]
-pytest = ">=6.0"
-pytest-xdist = "^3.3.1"
-pytest-cov = "^4.1.0"
-hypothesis = ">=6.2.0,<7.0"
-black = "^23.7.0"
+[dependency-groups]
+dev = ["ruff>=0.11.2", "pytest>=7.4.0,<8", "pytest-cov>=4.1.0,<5"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["weiroll"]
 
 [tool.pytest.ini_options]
-# NOTE: can't use xdist
-addopts = """
-    -n 0
-    --cov-branch
-    --cov-report term
-    --cov-report html
-    --cov-report xml
-    --cov=ape_roll
-"""
+testpaths = ["tests"]
 python_files = "test_*.py"
-testpaths = "tests"
-markers = "fuzzing: Run Hypothesis fuzz test suite"
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["integration: marks tests that require a running Anvil node"]

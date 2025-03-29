@@ -4,12 +4,13 @@ from enum import IntEnum, IntFlag
 from functools import cache
 from typing import Optional
 
-import ape
-from ape.contracts.base import ContractInstance as ApeContractInstance
 import eth_abi
 import eth_abi.packed
+import eth_abi.grammar
 from hexbytes import HexBytes
-from ethpm_types.abi import ABIType
+from web3 import Web3
+from web3.contract.base_contract import BaseContract, BaseContractFunction
+from web3.utils.abi import get_abi_element_info
 
 from .utils import eth_abi_encode_single
 
@@ -76,34 +77,38 @@ def simple_args(simple_sizes, args):
     return simplified
 
 
-# TODO: not sure about this class. its mostly here because this is how the javascript sdk works. now that this works, i think we can start refactoring to use brownie more directly
 class FunctionFragment:
-    def __init__(self, ape_contract: ApeContractInstance, selector):
-        method_abi = ape_contract.contract_type.methods[selector]
+    def __init__(self, contract: BaseContract, selector: str):
+        # Get function by selector
+        function = None
+        for func in contract.all_functions():
+            if _signature_to_selector(func.signature).to_0x_hex() == selector:
+                function = func
+                break
 
-        function = getattr(ape_contract, method_abi.name)
+        if function is None:
+            raise ValueError(f"Function with selector {selector} not found")
 
-        # if isinstance(function, OverloadedMethod):
-        #     overloaded_func = None
-        #     for m in function.methods.values():
-        #         # TODO: everyone is inconsistent about signature vs selector vs name
-        #         if m.signature == selector:
-        #             overloaded_func = m
-        #             break
-
-        #     assert overloaded_func
-        #     function = overloaded_func
-
+        # Get function details
         self.function = function
-        self.name = method_abi.name
+        self.name = function.fn_name  # use fn_name property
         self.signature = selector
-        self.inputs = _get_type_strings(method_abi.inputs)
 
-        # look at the inputs that aren't dynamic types but also aren't 32 bytes long and cut them up
+        # Extract input and output types
+        abi_element = function.abi
+
+        input_types = []
+        for inp in abi_element.get("inputs", []):
+            input_types.append(inp["type"])
+        self.inputs = input_types
+
+        output_types = []
+        for out in abi_element.get("outputs", []):
+            output_types.append(out["type"])
+        self.outputs = output_types
+
+        # Process inputs for complex types
         self.simple_inputs, self.simple_sizes = simple_type_strings(self.inputs)
-
-        self.outputs = _get_type_strings(method_abi.outputs)
-        # TODO: do something to handle outputs of uncommon types?
 
     def encode_args(self, *args):
         if len(args) != len(self.inputs):
@@ -269,11 +274,11 @@ class WeirollContract:
 
     def __init__(
         self,
-        ape_contract: ApeContractInstance,
+        contract: BaseContract,
         commandFlags: CommandFlags = CommandFlags(0),
     ):
-        self.ape_contract = ape_contract
-        self.address = ape_contract.address
+        self.contract = contract
+        self.address = contract.address
 
         self.commandFlags = commandFlags
         self.functions = {}  # aka functionsBySelector
@@ -282,12 +287,15 @@ class WeirollContract:
 
         selectorsByName = defaultdict(list)
 
-        for method in self.ape_contract.contract_type.methods:
-            selector = ape.project.provider.network.ecosystem.get_method_selector(
-                method
-            ).hex()
+        # Get all function names that don't start with underscore and aren't utility properties
+        function_names = [fn.name for fn in self.contract.all_functions()]
 
-            fragment = FunctionFragment(self.ape_contract, selector)
+        for function_name in function_names:
+            method: BaseContractFunction = self.contract.get_function_by_name(function_name)
+            selector = _signature_to_selector(method.signature).to_0x_hex()
+
+            # Create function fragment
+            fragment = FunctionFragment(self.contract, selector)
 
             # Check that the signature is unique; if not the ABI generation has
             # not been cleaned or may be incorrectly generated
@@ -325,16 +333,12 @@ class WeirollContract:
                 # define a new function which will use brownie' get_fn_from_args
                 # to decide which plan_fn to route to
                 def _overload(*args, fn_name=name):
-                    overload_method = getattr(self.ape_contract, fn_name)
-                    method = ape.contracts.base._select_method_abi(
-                        overload_method.abis, args
+                    method = next(
+                        fn
+                        for fn in self.contract.find_functions_by_args(*args)
+                        if fn.name == fn_name
                     )
-                    selector = (
-                        ape.project.provider.network.ecosystem.get_method_selector(
-                            method
-                        )
-                    )
-                    plan_fn = self.functions[selector.hex()]
+                    plan_fn = self.functions[method.selector.hex()]
                     return plan_fn(*args)
 
                 setattr(self, name, _overload)
@@ -353,7 +357,7 @@ class WeirollContract:
     # @cache
     def createContract(
         cls,
-        contract: ApeContractInstance,
+        contract: BaseContract,
         commandflags=CommandFlags.CALL,
     ):
         """
@@ -374,7 +378,7 @@ class WeirollContract:
     # @cache
     def createLibrary(
         cls,
-        contract: ApeContractInstance,
+        contract: BaseContract,
     ):
         """
         * Creates a [[Contract]] object from an ethers.js contract.
@@ -442,30 +446,9 @@ class WeirollPlanner:
 
         self.clone = clone
 
-    def approve(
-        self, token: ApeContractInstance, spender: str, wei_needed, approve_wei=None
-    ) -> Optional[ReturnValue]:
-        key = (token, self.clone, spender)
-
-        if approve_wei is None:
-            approve_wei = MAX_UINT256
-
-        if key in self.unlimited_approvals and approve_wei != 0:
-            # we already planned an infinite approval for this token (and we aren't trying to set the approval to 0)
-            return
-
-        # check current allowance
-        if token.allowance(self.clone, spender) >= wei_needed:
-            return
-
-        if approve_wei == MAX_UINT256:
-            self.unlimited_approvals.add(key)
-
-        return self.call(token, "approve", spender, approve_wei)
-
     def call(
         self,
-        ape_contract: ApeContractInstance,
+        contract: BaseContract,
         func_name,
         *args,
         value=None,
@@ -478,14 +461,14 @@ class WeirollPlanner:
 
         TODO: brownie has some logic for figuring out which overloaded method to use. we should use that here
         """
-        weiroll_contract = WeirollContract.createContract(ape_contract)
+        weiroll_contract = WeirollContract.createContract(contract)
 
         if func_name in weiroll_contract.functionsByUniqueName:
             func = weiroll_contract.functionsByUniqueName[func_name]
         elif func_name in weiroll_contract.functionsBySignature:
             func = weiroll_contract.functionsBySignature[func_name]
         else:
-            raise ValueError(f"Unknown func_name ({func_name}) on {ape_contract}")
+            raise ValueError(f"Unknown func_name ({func_name}) on {contract}")
 
         the_call = func(*args)
 
@@ -502,15 +485,15 @@ class WeirollPlanner:
 
         return self.add(the_call)
 
-    def delegatecall(self, ape_contract: ApeContractInstance, func_name, *args):
-        contract = WeirollContract.createLibrary(ape_contract)
+    def delegatecall(self, contract: BaseContract, func_name, *args):
+        weiroll_contract = WeirollContract.createLibrary(contract)
 
-        if func_name in contract.functionsByUniqueName:
-            func = contract.functionsByUniqueName[func_name]
-        elif func_name in contract.functionsBySignature:
-            func = contract.functionsBySignature[func_name]
+        if func_name in weiroll_contract.functionsByUniqueName:
+            func = weiroll_contract.functionsByUniqueName[func_name]
+        elif func_name in weiroll_contract.functionsBySignature:
+            func = weiroll_contract.functionsBySignature[func_name]
         else:
-            raise ValueError(f"Unknown func_name ({func_name}) on {ape_contract}")
+            raise ValueError(f"Unknown func_name ({func_name}) on {contract}")
 
         return self.add(func(*args))
 
@@ -548,7 +531,7 @@ class WeirollPlanner:
 
         return ReturnValue(call.fragment.outputs[0], command)
 
-    def subcall(self, ape_contract: ApeContractInstance, func_name, *args):
+    def subcall(self, contract: BaseContract, func_name, *args):
         """
         * Adds a call to a subplan. This has the effect of instantiating a nested instance of the weiroll
         * interpreter, and is commonly used for functionality such as flashloans, control flow, or anywhere
@@ -579,14 +562,14 @@ class WeirollPlanner:
         * ```
         * @param call The [[FunctionCall]] to add to the planner.
         """
-        contract = WeirollContract.createContract(ape_contract)
-        func = getattr(contract, func_name)
+        weiroll_contract = WeirollContract.createContract(contract)
+        func = getattr(weiroll_contract, func_name)
         func_call = func(*args)
         return self.addSubplan(func_call)
 
-    def subdelegatecall(self, ape_contract: ApeContractInstance, func_name, *args):
-        contract = WeirollContract.createLibrary(ape_contract)
-        func = getattr(contract, func_name)
+    def subdelegatecall(self, contract: BaseContract, func_name, *args):
+        weiroll_contract = WeirollContract.createLibrary(contract)
+        func = getattr(weiroll_contract, func_name)
         func_call = func(*args)
         return self.addSubplan(func_call)
 
@@ -828,7 +811,7 @@ class WeirollPlanner:
         return encodedCommands, state
 
 
-def _get_type_strings(abi_types: list[ABIType]) -> list[str]:
+def _get_type_strings(abi_types: list[eth_abi.grammar.ABIType]) -> list[str]:
     type_strings: list = []
 
     for abi_type in abi_types:
@@ -838,3 +821,7 @@ def _get_type_strings(abi_types: list[ABIType]) -> list[str]:
         else:
             type_strings.append(abi_type.type)
     return type_strings
+
+
+def _signature_to_selector(signature: str) -> HexBytes:
+    return Web3.keccak(text=signature)[:4]
