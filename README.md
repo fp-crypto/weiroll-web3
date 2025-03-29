@@ -1,6 +1,8 @@
 # weiroll-web3
 
-![weiroll](https://user-images.githubusercontent.com/83050944/265799164-385dbc06-b9cb-4a80-89bf-72552f0e6d74.png)
+![weiroll](https://github.com/user-attachments/assets/1c2a9265-e951-4ad7-8b0d-48e6686557e0)
+
+
 
 weiroll-web3 is a planner for the operation-chaining/scripting language [weiroll](https://github.com/weiroll/weiroll), integrated with the web3.py library for Ethereum interactions.
 
