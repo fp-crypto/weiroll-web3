@@ -97,9 +97,9 @@ def test_one_inch(mainnet_fork_web3, weiroll_vm):
             headers=headers,
         )
 
-        assert (
-            response.ok and response.status_code == 200
-        ), f"1inch API error: {response.text}"
+        assert response.ok and response.status_code == 200, (
+            f"1inch API error: {response.text}"
+        )
         tx_data = response.json()["tx"]
 
         # Get the 1inch router address and create a contract instance

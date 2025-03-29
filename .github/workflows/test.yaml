@@ -29,4 +29,4 @@ jobs:
         run: uv sync --group dev
 
       - name: Run tests (excluding integration tests)
-        run: uv run pytest tests --exclude=integration -v
+        run: uv run pytest tests --ignore=tests/integration
